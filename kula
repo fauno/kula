@@ -3,7 +3,6 @@ set -e
 
 mkdir -p ~/.kula/log 2>/dev/null
 
-filelist=~/.kula/log/filelist.log
 knownfiles=~/.kula/log/knownfiles.log
 kula=~/.kula/log/kula.log
 downloads=~/.kula/log/downloads.log
@@ -24,8 +23,8 @@ requires() {
 
 update_file_list() {
 # TODO support filtering by depth
-#  find -type f -readable -printf "%d:%p\n" >$filelist
-  find -type f -readable >$filelist
+#  find -type f -readable -printf "%d:%p\n" >filelist.log
+  find -type f -readable >filelist.log
 }
 
 peers() {
@@ -35,11 +34,12 @@ peers() {
 
 links() {
   echo "Getting $1 filelist"
-  wget $1/$filelist -q -O - | sed "s,^\.,http://$1," >$knownfiles
+  wget $1/filelist.log -q -O - | sed "s,^\.,http://$1," >$knownfiles
 }
 
 # wait for processes to end
 trap_kill() {
+  rm filelist.log
   echo "Killing services: $avahi_pid $httpd_pid"
   kill $avahi_pid $httpd_pid 2>/dev/null
   wait $avahi_pid $httpd_pid
@@ -63,7 +63,7 @@ echo "Kula: $avahi_pid"
 
 while [ 1 ]; do
   update_file_list && \
-  echo "Sharing $(wc -l $filelist | cut -d" " -f1) files"
+  echo "Sharing $(wc -l filelist.log | cut -d" " -f1) files"
 
   peers="$(peers)"
   dls=""
