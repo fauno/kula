@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+mkdir -p ~/.kula/log 2>/dev/null
+
+filelist=~/.kula/log/filelist.log
+knownfiles=~/.kula/log/knownfiles.log
+kula=~/.kula/log/kula.log
+downloads=~/.kula/log/downloads.log
+
 requires() {
   local _i
   for _i in $@; do
@@ -17,8 +24,8 @@ requires() {
 
 update_file_list() {
 # TODO support filtering by depth
-#  find -type f -readable -printf "%d:%p\n" >filelist.log
-  find -type f -readable >filelist.log
+#  find -type f -readable -printf "%d:%p\n" >$filelist
+  find -type f -readable >$filelist
 }
 
 peers() {
@@ -28,7 +35,7 @@ peers() {
 
 links() {
   echo "Getting $1 filelist"
-  wget $1/filelist.log -q -O - | sed "s,^\.,http://$1," >knownfiles.log
+  wget $1/$filelist -q -O - | sed "s,^\.,http://$1," >$knownfiles
 }
 
 # wait for processes to end
@@ -45,7 +52,7 @@ requires avahi-publish darkhttpd avahi-browse wget find
 
 pushd "${1:-.}" >/dev/null
 
-darkhttpd . --port 12556 --log kula.log &
+darkhttpd . --port 12556 --log $kula &
 httpd_pid=$!
 
 avahi-publish -s "Kula Ring" _kula._tcp 12556 &
@@ -56,7 +63,7 @@ echo "Kula: $avahi_pid"
 
 while [ 1 ]; do
   update_file_list && \
-  echo "Sharing $(wc -l filelist.log | cut -d" " -f1) files"
+  echo "Sharing $(wc -l $filelist | cut -d" " -f1) files"
 
   peers="$(peers)"
   dls=""
@@ -65,12 +72,12 @@ while [ 1 ]; do
   for _peer in $peers; do
     links $_peer
 
-    grep "$_peer" knownfiles.log | sort -R | head -n1 | \
+    grep "$_peer" $knownfiles | sort -R | head -n1 | \
       wget -i - --no-verbose \
            --timeout=5 \
            --continue \
            --no-clobber \
-           --append-output=downloads.log \
+           --append-output=$downloads \
            --force-directories \
            --no-host-directories &
     dls+=" $!"
