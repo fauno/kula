@@ -62,7 +62,7 @@ while [ 1 ]; do
   echo "Found ${#peers} peers"
 
   for _peer in $peers; do
-    links $peer
+    links $_peer
 
     grep "$_peer" knownfiles.log | sort -R | head -n1 | \
       wget -i - --no-verbose \
