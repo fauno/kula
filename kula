@@ -27,7 +27,8 @@ peers() {
 }
 
 links() {
-  wget $1/filelist.log -q -O - | sed "s/^\./http:\/\/$1/" >knownfiles.log
+  echo "Getting $1 filelist"
+  wget $1/filelist.log -q -O - | sed "s,^\.,http://$1," >knownfiles.log
 }
 
 # wait for processes to end
@@ -59,7 +60,7 @@ while [ 1 ]; do
 
   peers="$(peers)"
   dls=""
-  echo "Found ${#peers} peers"
+  echo "Found ${#peers} peers: $peers"
 
   for _peer in $peers; do
     links $_peer
