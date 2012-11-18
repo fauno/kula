@@ -42,7 +42,7 @@ trap trap_kill INT KILL ERR EXIT
 
 requires avahi-publish darkhttpd avahi-browse wget find
 
-pushd ${1:-.} >/dev/null
+pushd "${1:-.}" >/dev/null
 
 darkhttpd . --port 12556 --log kula.log &
 httpd_pid=$!
