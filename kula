@@ -39,7 +39,7 @@ links() {
 
 # wait for processes to end
 trap_kill() {
-  rm filelist.log
+  rm -f filelist.log
   echo "Killing services: $avahi_pid $httpd_pid"
   kill $avahi_pid $httpd_pid 2>/dev/null
   wait $avahi_pid $httpd_pid
