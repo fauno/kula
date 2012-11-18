@@ -67,6 +67,7 @@ while [ 1 ]; do
 
     grep "$_peer" knownfiles.log | sort -R | head -n1 | \
       wget -i - --no-verbose \
+           --timeout=5 \
            --continue \
            --no-clobber \
            --append-output=downloads.log \
