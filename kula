@@ -1,0 +1,85 @@
+#!/bin/sh
+set -e
+
+requires() {
+  local _i
+  for _i in $@; do
+    if ! which $_i >/dev/null 2>&1; then
+      missing="${missing} ${_i}"
+    fi
+  done
+
+  if [ ${#missing} -ne 0 ]; then
+    echo "$0 requires the following programs ${missing}" 1>&2
+    exit 1
+  fi
+}
+
+update_file_list() {
+# TODO support filtering by depth
+#  find -type f -readable -printf "%d:%p\n" >filelist.log
+  find -type f -readable >filelist.log
+}
+
+peers() {
+  avahi-browse --ignore-local --terminate --parsable --resolve \
+               _kula._tcp | grep "^=" | cut -d";" -f9-10 | tr ";" ":"
+}
+
+links() {
+  wget $1/filelist.log -q -O - | sed "s/^\./http:\/\/$1/" >knownfiles.log
+}
+
+# wait for processes to end
+trap_kill() {
+  echo "Killing services: $avahi_pid $httpd_pid"
+  kill $avahi_pid $httpd_pid 2>/dev/null
+  wait $avahi_pid $httpd_pid
+  popd >/dev/null
+}
+
+trap trap_kill INT KILL ERR EXIT
+
+requires avahi-publish darkhttpd avahi-browse wget find
+
+pushd ${1:-.} >/dev/null
+
+darkhttpd . --port 12556 --log kula.log &
+httpd_pid=$!
+
+avahi-publish -s "Kula Ring" _kula._tcp 12556 &
+avahi_pid=$!
+
+echo "HTTPd: $httpd_pid"
+echo "Kula: $avahi_pid"
+
+while [ 1 ]; do
+  update_file_list && \
+  echo "Sharing $(wc -l filelist.log | cut -d" " -f1) files"
+
+  peers="$(peers)"
+  dls=""
+  echo "Found ${#peers} peers"
+
+  for _peer in $peers; do
+    links $peer
+
+    grep "$_peer" knownfiles.log | sort -R | head -n1 | \
+      wget -i - --no-verbose \
+           --continue \
+           --no-clobber \
+           --append-output=downloads.log \
+           --force-directories \
+           --no-host-directories &
+    dls+=" $!"
+
+  done
+
+  if [ ${#dls} -ne 0 ]; then
+    echo "Waiting for downloads ($dls)"
+    wait $dls
+  else 
+    echo "Sleeping 15s"
+    sleep 15s
+  fi
+done
