@@ -23,7 +23,7 @@ update_file_list() {
 
 peers() {
   avahi-browse --ignore-local --terminate --parsable --resolve \
-               _kula._tcp | grep "^=" | cut -d";" -f9-10 | tr ";" ":"
+               _kula._tcp | grep "^=" | cut -d";" -f8-9 | tr ";" ":"
 }
 
 links() {
