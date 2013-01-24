@@ -42,11 +42,11 @@ trap_kill() {
   rm -f filelist.log
   echo "Killing services: $avahi_pid $httpd_pid"
   kill $avahi_pid $httpd_pid 2>/dev/null
-  wait $avahi_pid $httpd_pid
+  wait $avahi_pid $httpd_pid $dls
   popd >/dev/null
 }
 
-trap trap_kill INT KILL ERR EXIT
+trap trap_kill INT KILL EXIT
 
 requires avahi-publish darkhttpd avahi-browse wget find
 
